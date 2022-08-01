@@ -3,14 +3,12 @@ import styles from "./app.module.css";
 import "./App.css";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import Checkbox from "@mui/material/Checkbox";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 function App() {
   const ogList = localStorage.getItem("list");
-  const ogCheck = localStorage.getItem("check");
   const [toDoList, setToDoList] = useState<
     { item: string; checked: boolean }[]
   >(ogList ? JSON.parse(ogList) : []);
