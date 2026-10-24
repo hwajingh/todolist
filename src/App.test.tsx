@@ -1,9 +1,18 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+test('renders the list UI and adds an item', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText(/To Do List/i)).toBeInTheDocument();
+  const input = screen.getByPlaceholderText(/Add something/i);
+  fireEvent.change(input, { target: { value: 'Buy milk' } });
+  const buttons = screen.getAllByRole('button');
+  fireEvent.click(buttons[0]);
+  expect(screen.getByText('Buy milk')).toBeInTheDocument();
+  expect(screen.getByText(/Made by Tiger Hong/i)).toBeInTheDocument();
 });
