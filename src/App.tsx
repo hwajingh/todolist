@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import styles from "./app.module.css";
 import "./App.css";
 import IconButton from "@mui/material/IconButton";
@@ -8,40 +8,76 @@ import Checkbox from "@mui/material/Checkbox";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 function App() {
-  const ogList = localStorage.getItem("list");
+  // FIX: lazy-init + try/catch. Previously a corrupted stored value threw
+  // during render and whitescreened the app, and localStorage was re-read
+  // on every render. Items also get a stable id (see below).
   const [toDoList, setToDoList] = useState<
-    { item: string; checked: boolean }[]
-  >(ogList ? JSON.parse(ogList) : []);
+    { id: string; item: string; checked: boolean }[]
+  >(() => {
+    try {
+      const ogList = localStorage.getItem("list");
+      const parsed = ogList ? JSON.parse(ogList) : [];
+      return parsed.map(
+        (entry: { id?: string; item: string; checked: boolean }, i: number) => ({
+          id: entry.id ?? `legacy-${i}-${Date.now()}`,
+          item: entry.item,
+          checked: entry.checked,
+        })
+      );
+    } catch {
+      return [];
+    }
+  });
   const [item, setItem] = useState<string>("");
 
+  // FIX: handlers are now immutable (map/filter/spread) and persist the
+  // NEW list, not the stale state. Previously they mutated toDoList in
+  // place and stringified the old state.
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement>,
-    index: number
+    id: string
   ) => {
-    const list = toDoList;
-    list[index] = { item: list[index].item, checked: !list[index].checked };
-    localStorage.setItem("list", JSON.stringify(toDoList));
-    setToDoList([...list]);
+    const next = toDoList.map((entry) =>
+      entry.id === id ? { ...entry, checked: !entry.checked } : entry
+    );
+    setToDoList(next);
+    localStorage.setItem("list", JSON.stringify(next));
   };
 
   const addToList = () => {
-    const list = toDoList;
-    list.push({ item, checked: false });
-    setToDoList([...list]);
+    const next = [
+      ...toDoList,
+      {
+        id:
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`,
+        item,
+        checked: false,
+      },
+    ];
+    setToDoList(next);
     setItem("");
-    localStorage.setItem("list", JSON.stringify(toDoList));
+    localStorage.setItem("list", JSON.stringify(next));
   };
 
-  const deleteFromList = (index: number) => {
-    const list = toDoList;
-    list.splice(index, 1);
-    setToDoList([...list]);
-    localStorage.setItem("list", JSON.stringify(toDoList));
+  const deleteFromList = (id: string) => {
+    const next = toDoList.filter((entry) => entry.id !== id);
+    setToDoList(next);
+    localStorage.setItem("list", JSON.stringify(next));
   };
 
-  toDoList.sort((a, b) => {
-    return a.checked ? 1 : -1;
-  });
+  // FIX: sort a COPY, in render, with a total comparator. Previously
+  // toDoList.sort() mutated live state on every render and ignored `b`,
+  // so order between same-checked items was unstable — and the old
+  // index-based handlers then edited/deleted the wrong row after sorting.
+  const sortedList = useMemo(
+    () =>
+      [...toDoList].sort(
+        (a, b) => Number(a.checked) - Number(b.checked)
+      ),
+    [toDoList]
+  );
 
   return (
     <div className="App">
@@ -58,32 +94,35 @@ function App() {
             size="small"
             fullWidth
           />
-          <IconButton disabled={item.replace(/\s/g, "") === ""} size="large">
-            <AddIcon
-              onClick={() => {
-                addToList();
-              }}
-            />
+          <IconButton
+            disabled={item.replace(/\s/g, "") === ""}
+            size="large"
+            onClick={() => {
+              addToList();
+            }}
+          >
+            <AddIcon />
           </IconButton>
         </div>
 
         <ul className={styles.list}>
-          {toDoList.map((item, index) => (
-            <div className={styles.individualItem}>
+          {sortedList.map((item) => (
+            <div className={styles.individualItem} key={item.id}>
               <Checkbox
                 className={styles.checkbox}
                 checked={item.checked}
-                onChange={(e) => handleChange(e, index)}
+                onChange={(e) => handleChange(e, item.id)}
               />
               <li className={item.checked ? styles.strike : styles.overflow}>
                 {item.item}
               </li>
-              <IconButton className={styles.delete}>
-                <DeleteIcon
-                  onClick={() => {
-                    deleteFromList(index);
-                  }}
-                />
+              <IconButton
+                className={styles.delete}
+                onClick={() => {
+                  deleteFromList(item.id);
+                }}
+              >
+                <DeleteIcon />
               </IconButton>
             </div>
           ))}
