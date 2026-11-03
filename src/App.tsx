@@ -8,9 +8,7 @@ import Checkbox from "@mui/material/Checkbox";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 function App() {
-  // FIX: lazy-init + try/catch. Previously a corrupted stored value threw
-  // during render and whitescreened the app, and localStorage was re-read
-  // on every render. Items also get a stable id (see below).
+  // Lazy-init with try/catch, so a corrupted stored value cannot whitescreen the app.
   const [toDoList, setToDoList] = useState<
     { id: string; item: string; checked: boolean }[]
   >(() => {
@@ -30,9 +28,7 @@ function App() {
   });
   const [item, setItem] = useState<string>("");
 
-  // FIX: handlers are now immutable (map/filter/spread) and persist the
-  // NEW list, not the stale state. Previously they mutated toDoList in
-  // place and stringified the old state.
+  // Handlers are immutable and persist the new list, not stale state.
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement>,
     id: string
@@ -70,10 +66,7 @@ function App() {
     localStorage.setItem("list", JSON.stringify(next));
   };
 
-  // FIX: sort a COPY, in render, with a total comparator. Previously
-  // toDoList.sort() mutated live state on every render and ignored `b`,
-  // so order between same-checked items was unstable — and the old
-  // index-based handlers then edited/deleted the wrong row after sorting.
+  // Sort a copy in render; never mutate live state.
   const sortedList = useMemo(
     () =>
       [...toDoList].sort(
