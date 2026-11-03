@@ -11,9 +11,11 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  width: 400px;
+  width: 100%;
 }
 .overflow {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -23,13 +25,15 @@
   align-items: center;
   justify-items: center;
   flex-direction: column;
-  width: 400px;
+  width: min(400px, calc(100vw - 32px));
   margin: 0 auto;
-  padding-top: 80px;
-  /* padding-right: 100px;  */
+  padding: 80px 16px 16px;
+  box-sizing: border-box;
 }
 
 .strike {
+  flex: 1;
+  min-width: 0;
   text-decoration: line-through;
   overflow: hidden;
   white-space: nowrap;

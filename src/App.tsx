@@ -45,6 +45,9 @@ function App() {
   };
 
   const addToList = () => {
+    if (item.trim() === "") {
+      return;
+    }
     const next = [
       ...toDoList,
       {
@@ -83,10 +86,16 @@ function App() {
     <div className="App">
       <div className={styles.root}>
         <h1 className={styles.header}>To Do List </h1>
-        <div className={styles.head}>
+        <form
+          className={styles.head}
+          onSubmit={(e) => {
+            e.preventDefault();
+            addToList();
+          }}
+        >
           <TextField
             id="filled-basic"
-            label=""
+            label="New to-do"
             variant="filled"
             placeholder="Add something"
             onChange={(e) => setItem(e.target.value)}
@@ -95,36 +104,40 @@ function App() {
             fullWidth
           />
           <IconButton
+            type="submit"
+            aria-label="Add to-do"
             disabled={item.replace(/\s/g, "") === ""}
             size="large"
-            onClick={() => {
-              addToList();
-            }}
           >
             <AddIcon />
           </IconButton>
-        </div>
+        </form>
 
         <ul className={styles.list}>
           {sortedList.map((item) => (
-            <div className={styles.individualItem} key={item.id}>
+            <li className={styles.individualItem} key={item.id}>
               <Checkbox
                 className={styles.checkbox}
                 checked={item.checked}
                 onChange={(e) => handleChange(e, item.id)}
+                inputProps={{ "aria-label": `Mark ${item.item} done` }}
               />
-              <li className={item.checked ? styles.strike : styles.overflow}>
+              <span
+                className={item.checked ? styles.strike : styles.overflow}
+                title={item.item}
+              >
                 {item.item}
-              </li>
+              </span>
               <IconButton
                 className={styles.delete}
+                aria-label={`Delete ${item.item}`}
                 onClick={() => {
                   deleteFromList(item.id);
                 }}
               >
                 <DeleteIcon />
               </IconButton>
-            </div>
+            </li>
           ))}
         </ul>
         <div className={styles.footer}>Made by Tiger Hong</div>
